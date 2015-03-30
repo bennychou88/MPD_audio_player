@@ -10,10 +10,15 @@ def MPD_init():
 
 def FolderToPlaylist(foldername):
     client.clear()
-    print("Adding music to playlist:")
-    for filename in client.lsinfo(foldername):
-        print "Adding: " + filename["file"]
-        client.add(filename["file"])
+    try:
+        print("Adding music to playlist:")
+        for filename in client.lsinfo(foldername):
+            print "Adding: " + filename["file"]
+            client.add(filename["file"])
+        return True
+    except:
+        print "Error: folder does not exists"
+        return False
     #print(client.playlist())
 
 def StartPlaying():

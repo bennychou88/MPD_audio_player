@@ -2,6 +2,7 @@ from mpd import MPDClient
 from time import sleep
 import RPi.GPIO as GPIO
 import sys
+import os
 
 #Project modules
 import MPD_module
@@ -10,6 +11,7 @@ import RFID_module
 def FolderToPlaylist(foldername):
     client.clear()
     print("Adding music to playlist:")
+    print (os.path.exists("/home/pi/MP3Files/" + foldername))
     for filename in client.lsinfo(foldername):
         print "Adding: " + filename["file"]
         client.add(filename["file"])
@@ -60,12 +62,8 @@ def SetupGPIO():
 
 def main(argv):
     SetupGPIO()
-    
     MPD_module.MPD_init()
     RFID_module.init()
-    #GPIO.output(23, True)
-    MPD_module.FolderToPlaylist("21")
-    MPD_module.StartPlaying()
 
     sleep(5)
     #GPIO.output(23, False)
@@ -73,8 +71,14 @@ def main(argv):
     MPD_module.client.stop()
 	
     while(True):
-        print"test"
-        sleep(5)
+        current_card_id = RFID_module.read_card()
+        print current_card_id
+        if (current_card_id <> "No card"):
+            print "adding: " + current_card_id
+            print MPD_module.FolderToPlaylist(current_card_id)
+            MPD_module.StartPlaying()
+        
+        
     pass
 
 if __name__ == "__main__":
