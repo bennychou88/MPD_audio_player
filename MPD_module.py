@@ -1,4 +1,5 @@
 from mpd import MPDClient
+import math
 
 client = MPDClient() # instantiate the client object
 
@@ -21,6 +22,12 @@ def FolderToPlaylist(foldername):
         return False
     #print(client.playlist())
 
+def get_duration():
+    return client.currentsong()['time'] #duration of current song in seconds
+
+def get_elapsed():
+    return math.trunc(float(client.status()['elapsed'])) #elapsed time of current song in seconds
+    
 def StartPlaying():
     client.play() # play the playlist
     print "Start playing playlist"

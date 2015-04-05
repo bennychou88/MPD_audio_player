@@ -3,10 +3,15 @@ from time import sleep
 import RPi.GPIO as GPIO
 import sys
 import os
+import math
+from ConfigParser import SafeConfigParser
+from mutagen.mp3 import MP3
+
 
 #Project modules
 import MPD_module
 import RFID_module
+import LCD_module
 
 def FolderToPlaylist(foldername):
     client.clear()
@@ -61,25 +66,53 @@ def SetupGPIO():
     GPIO.add_event_detect(24, GPIO.FALLING, callback=PreviousButtonFunction, bouncetime=300)
 
 def main(argv):
+    parser = SafeConfigParser()
+    parser.read('audiofiles.ini')
+    current_tag = ""
+    percentage = 0
+    
+    LCD_module.display_playing(5,15,50)
+
+    print parser.get('Folders', '0727FBCC')
     SetupGPIO()
     MPD_module.MPD_init()
     RFID_module.init()
-
-    sleep(5)
-    #GPIO.output(23, False)
-	
-    MPD_module.client.stop()
-	
-    while(True):
-        current_card_id = RFID_module.read_card()
-        print current_card_id
-        if (current_card_id <> "No card"):
-            print "adding: " + current_card_id
-            print MPD_module.FolderToPlaylist(current_card_id)
-            MPD_module.StartPlaying()
+    while True:
         
+        print "reading rfid"
+        read_tag = str(RFID_module.read_card_id())
+        if ((read_tag <> "None") and (read_tag <> current_tag)):
+            parser.read('audiofiles.ini')
+            try:   
+                tag_dir = parser.get('Folders', read_tag)
+                print "Parser dir: " + tag_dir
+                MPD_module.client.stop()
+                MPD_module.FolderToPlaylist(tag_dir)
+                MPD_module.StartPlaying()
+                current_tag = read_tag
+                
+            except:
+                print "Folder not found"
+            
+        playlistlength = MPD_module.client.status()['playlistlength']
+        try: 
+            song = int(MPD_module.client.status()['song']) + 1
+            #print MPD_module.client.status()
+            percentage = math.trunc(float(MPD_module.get_elapsed()) / float(MPD_module.get_duration()) * 100)
+            
+            print MPD_module.get_elapsed()
+            print MPD_module.get_duration()
+        except:
+            song = 0
+        print  percentage    
+        LCD_module.display_playing(song,playlistlength,percentage)
         
+    sleep(5) 
+    
     pass
 
 if __name__ == "__main__":
-    main(sys.argv)
+    try:
+        main(sys.argv)
+    except KeyboardInterrupt:
+        GPIO.cleanup()
